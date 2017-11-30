@@ -37,8 +37,10 @@ class ZMQConan(ConanFile):
 
     def build(self):
         with tools.chdir("sources"):
-            for name in ['configure', 'version.sh', os.path.join('config', 'install-sh')]:
+            for name in ['autogen.sh', 'configure', 'version.sh', os.path.join('config', 'install-sh')]:
                 os.chmod(name, os.stat(name).st_mode | 0o111)
+
+            self.run('./autogen.sh')
 
             env_build = AutoToolsBuildEnvironment(self)
             args = ['--prefix=%s' % self.package_folder,
