@@ -16,6 +16,15 @@ class ZMQConan(ConanFile):
     options = {"shared": [True, False]}
     default_options = "shared=False"
 
+    def system_requirements(self):
+        if self.settings.os == "Linux":
+            if tools.os_info.linux_distro == "ubuntu" or tools.os_info.linux_distro == "debian":
+                arch = ''
+                if self.settings.arch == "x86" and tools.detected_architecture() == "x86_64":
+                    arch = ':i386'
+                installer = tools.SystemPackageTool()
+                installer.install('pkg-config%s' % arch)
+
     def source(self):
         extracted_dir = "zeromq-%s" % self.version
         if self.settings.os == "Windows":
