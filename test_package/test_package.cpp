@@ -1,6 +1,9 @@
-// #include <cpprest/json.h>
+#include <zmq.h>
 
 int main()
 {
-    // const auto parsed_value = web::json::value::parse(U("-22"));
+    void *context = zmq_ctx_new();
+    void *requester = zmq_socket(context, ZMQ_REQ);
+    zmq_close(requester);
+    zmq_ctx_destroy (context);
 }
