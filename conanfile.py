@@ -57,6 +57,15 @@ class ZMQConan(ConanFile):
         elif vs_version > 14:
             folder = 'vs2015'
             toolset = 'v141'
+        runtime_library = {'MT': 'MultiThreaded',
+                           'MTd': 'MultiThreadedDebug',
+                           'MD': 'MultiThreadedDLL',
+                           'MDd': 'MultiThreadedDebugDLL'}.get(str(self.settings.compiler.runtime))
+
+        libzmq_props = os.path.join('sources', 'builds', 'msvc', 'vs2015', 'libzmq', 'libzmq.props')
+        tools.replace_in_file(libzmq_props, '<ClCompile>',
+                              '<ClCompile><RuntimeLibrary>%s</RuntimeLibrary>' % runtime_library)
+
         if self.settings.build_type == 'Debug':
             config = 'DynDebug' if self.options.shared else 'StaticDebug'
         elif self.settings.build_type == 'Release':
