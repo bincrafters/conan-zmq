@@ -10,8 +10,8 @@ class ZMQConan(ConanFile):
     version = "4.2.2"
     url = "https://github.com/bincrafters/conan-zmq"
     description = "ZeroMQ is a community of projects focused on decentralized messaging and computing"
-    license = "https://github.com/someauthor/somelib/blob/master/LICENSES"
-    exports_sources = ["LICENSE"]
+    license = "LGPL-3.0"
+    exports = ["LICENSE.md"]
     settings = "os", "arch", "compiler", "build_type"
     options = {"shared": [True, False]}
     default_options = "shared=False"
