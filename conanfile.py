@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, AutoToolsBuildEnvironment, tools
+from conans import ConanFile, AutoToolsBuildEnvironment, VisualStudioBuildEnvironment, tools
 import os
 
 
@@ -13,12 +13,16 @@ class ZMQConan(ConanFile):
     license = "LGPL-3.0"
     exports = ["LICENSE.md"]
     settings = "os", "arch", "compiler", "build_type"
-    options = {"shared": [True, False], "fPIC": [True, False]}
-    default_options = "shared=False", "fPIC=True"
+    options = {"shared": [True, False], "fPIC": [True, False], "encryption": [None, "libsodium"]}
+    default_options = "shared=False", "fPIC=True", "encryption=libsodium"
 
     def configure(self):
         if self.settings.compiler == 'Visual Studio':
             del self.options.fPIC
+
+    def requirements(self):
+        if self.options.encryption == 'libsodium':
+            self.requires.add('libsodium/[>=1.0.15]@bincrafters/stable')
 
     def system_requirements(self):
         if self.settings.os == "Linux":
@@ -41,7 +45,9 @@ class ZMQConan(ConanFile):
 
     def build(self):
         if self.settings.compiler == 'Visual Studio':
-            self.build_vs()
+            env_build = VisualStudioBuildEnvironment(self)
+            with tools.environment_append(env_build.vars):
+                self.build_vs()
         else:
             self.build_configure()
 
@@ -79,6 +85,8 @@ class ZMQConan(ConanFile):
                                                build_type=config, targets=['libzmq'], toolset=toolset)
             if self.settings.arch == 'x86':
                 command = command.replace('/p:Platform="x86"', '/p:Platform="Win32"')
+            if self.options.encryption == 'libsodium':
+                command += ' /property:option-sodium=True'
             self.run(command)
 
     def build_configure(self):
@@ -93,6 +101,8 @@ class ZMQConan(ConanFile):
                     '--without-docs']
             if self.options.fPIC:
                 args.append('--with-pic')
+            if self.options.encryption == 'libsodium':
+                args.append('--with-libsodium')
             if self.options.shared:
                 args.extend(['--disable-static', '--enable-shared'])
             else:
