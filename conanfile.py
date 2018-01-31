@@ -25,11 +25,13 @@ class ZMQConan(ConanFile):
             self.requires.add('libsodium/[>=1.0.15]@bincrafters/stable')
 
     def system_requirements(self):
-        if self.settings.os == "Linux":
-            if tools.os_info.linux_distro == "ubuntu" or tools.os_info.linux_distro == "debian":
+        if self.settings.os == "Linux" and tools.os_info.is_linux:
+            if tools.os_info.with_apt:
                 arch = ''
-                if self.settings.arch == "x86" and tools.detected_architecture() == "x86_64":
+                if self.settings.arch == "x86":
                     arch = ':i386'
+                elif self.settings.arch == 'x86_64':
+                    arch = ':amd64'
                 installer = tools.SystemPackageTool()
                 installer.install('pkg-config%s' % arch)
 
