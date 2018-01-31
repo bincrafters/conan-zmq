@@ -13,8 +13,12 @@ class ZMQConan(ConanFile):
     license = "LGPL-3.0"
     exports = ["LICENSE.md"]
     settings = "os", "arch", "compiler", "build_type"
-    options = {"shared": [True, False]}
-    default_options = "shared=False"
+    options = {"shared": [True, False], "fPIC": [True, False]}
+    default_options = "shared=False", "fPIC=True"
+
+    def configure(self):
+        if self.settings.compiler == 'Visual Studio':
+            del self.options.fPIC
 
     def system_requirements(self):
         if self.settings.os == "Linux":
@@ -86,8 +90,9 @@ class ZMQConan(ConanFile):
 
             env_build = AutoToolsBuildEnvironment(self)
             args = ['--prefix=%s' % self.package_folder,
-                    '--with-pic',
                     '--without-docs']
+            if self.options.fPIC:
+                args.append('--with-pic')
             if self.options.shared:
                 args.extend(['--disable-static', '--enable-shared'])
             else:
