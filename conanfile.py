@@ -12,6 +12,7 @@ class ZMQConan(ConanFile):
     description = "ZeroMQ is a community of projects focused on decentralized messaging and computing"
     license = "LGPL-3.0"
     exports = ["LICENSE.md"]
+    exports_sources = ['FindZeroMQ.cmake']
     settings = "os", "arch", "compiler", "build_type"
     options = {"shared": [True, False], "fPIC": [True, False], "encryption": [None, "libsodium"]}
     default_options = "shared=False", "fPIC=True", "encryption=libsodium"
@@ -116,6 +117,7 @@ class ZMQConan(ConanFile):
             env_build.make(args=['install'])
 
     def package(self):
+        self.copy('FindZeroMQ.cmake')
         with tools.chdir("sources"):
             self.copy(pattern="LICENSE")
         if self.settings.compiler == 'Visual Studio':
