@@ -34,7 +34,7 @@ class ZMQConan(ConanFile):
 
     def requirements(self):
         if self.options.encryption == 'libsodium':
-            self.requires.add('libsodium/1.0.15@bincrafters/stable')
+            self.requires.add('libsodium/1.0.16@bincrafters/stable')
 
     def system_requirements(self):
         if self.settings.os == "Linux" and tools.os_info.is_linux:
