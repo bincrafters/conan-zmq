@@ -11,3 +11,7 @@ file(GLOB SOURCE_FILES *.cpp)
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${CONAN_LIBS})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+
+if(WITH_LIBSODIUM)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE "WITH_LIBSODIUM")
+endif()

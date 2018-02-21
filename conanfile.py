@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, AutoToolsBuildEnvironment, tools
+from conans import ConanFile, tools, CMake
 import os
 
 
@@ -12,119 +12,89 @@ class ZMQConan(ConanFile):
     description = "ZeroMQ is a community of projects focused on decentralized messaging and computing"
     license = "LGPL-3.0"
     exports = ["LICENSE.md"]
+    exports_sources = ['FindZeroMQ.cmake', 'Findlibzmq.cmake', 'CMakeLists.txt']
     settings = "os", "arch", "compiler", "build_type"
-    options = {"shared": [True, False]}
-    default_options = "shared=False"
+    options = {"shared": [True, False], "fPIC": [True, False], "encryption": [None, "libsodium", "tweetnacl"]}
+    default_options = "shared=False", "fPIC=True", "encryption=libsodium"
+    generators = ['cmake']
+
+    def build_cmake(self):
+        cmake = CMake(self, generator='Ninja')
+        if self.settings.compiler != 'Visual Studio':
+            cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
+        cmake.definitions['ENABLE_CURVE'] = self.options.encryption is not None
+        cmake.definitions['WITH_LIBSODIUM'] = self.options.encryption == "libsodium"
+        cmake.configure(build_dir='build')
+        cmake.build()
+        cmake.install()
+
+    def configure(self):
+        if self.settings.compiler == 'Visual Studio':
+            del self.options.fPIC
+
+    def requirements(self):
+        if self.options.encryption == 'libsodium':
+            self.requires.add('libsodium/1.0.16@bincrafters/stable')
 
     def system_requirements(self):
-        if self.settings.os == "Linux":
-            if tools.os_info.linux_distro == "ubuntu" or tools.os_info.linux_distro == "debian":
+        if self.settings.os == "Linux" and tools.os_info.is_linux:
+            if tools.os_info.with_apt:
                 arch = ''
-                if self.settings.arch == "x86" and tools.detected_architecture() == "x86_64":
+                if self.settings.arch == "x86":
                     arch = ':i386'
+                elif self.settings.arch == 'x86_64':
+                    arch = ':amd64'
                 installer = tools.SystemPackageTool()
                 installer.install('pkg-config%s' % arch)
 
     def source(self):
-        extracted_dir = "zeromq-%s" % self.version
-        if self.settings.os == "Windows":
-            archive_name = "%s.tar.gz" % extracted_dir
-        else:
-            archive_name = "%s.zip" % extracted_dir
-        source_url = "https://github.com/zeromq/libzmq/releases/download/v%s/%s" % (self.version, archive_name)
+        # see https://github.com/zeromq/libzmq/issues/2597
+        extracted_dir = "libzmq-%s" % self.version
+        archive_name = "v%s.tar.gz" % self.version
+        source_url = "https://github.com/zeromq/libzmq/archive/%s" % archive_name
         tools.get(source_url)
         os.rename(extracted_dir, "sources")
 
+        # disable precompiled headers
+        # fatal error C1083: Cannot open precompiled header file: 'precompiled.pch': Permission denied
+        tools.replace_in_file(os.path.join('sources', 'CMakeLists.txt'),
+                              "if (MSVC)\n    # default for all sources is to use precompiled header",
+                              "if (MSVC_DISABLED)\n    # default for all sources is to use precompiled header")
+
+        # fix PDB location
+        tools.replace_in_file(os.path.join('sources', 'CMakeLists.txt'),
+                              'install (FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/libzmq',
+                              'install (FILES ${CMAKE_BINARY_DIR}/bin/libzmq')
+
+        tools.replace_in_file(os.path.join('sources', 'builds', 'cmake', 'platform.hpp.in'),
+                              'HAVE_LIBSODIUM', 'ZMQ_USE_LIBSODIUM')
+
     def build(self):
         if self.settings.compiler == 'Visual Studio':
-            self.build_vs()
+            with tools.vcvars(self.settings, force=True, filter_known_paths=False):
+                self.build_cmake()
         else:
-            self.build_configure()
-
-    def build_vs(self):
-        vs_version = int(str(self.settings.compiler.version))
-        toolset = None
-        if vs_version == 9:
-            folder = 'vs2008'
-        elif vs_version == 10:
-            folder = 'vs2010'
-        elif vs_version == 11:
-            folder = 'vs2012'
-        elif vs_version == 12:
-            folder = 'vs2013'
-        elif vs_version == 14:
-            folder = 'vs2015'
-        elif vs_version > 14:
-            folder = 'vs2015'
-            toolset = 'v141'
-        runtime_library = {'MT': 'MultiThreaded',
-                           'MTd': 'MultiThreadedDebug',
-                           'MD': 'MultiThreadedDLL',
-                           'MDd': 'MultiThreadedDebugDLL'}.get(str(self.settings.compiler.runtime))
-
-        libzmq_props = os.path.join('sources', 'builds', 'msvc', 'vs2015', 'libzmq', 'libzmq.props')
-        tools.replace_in_file(libzmq_props, '<ClCompile>',
-                              '<ClCompile><RuntimeLibrary>%s</RuntimeLibrary>' % runtime_library)
-
-        if self.settings.build_type == 'Debug':
-            config = 'DynDebug' if self.options.shared else 'StaticDebug'
-        elif self.settings.build_type == 'Release':
-            config = 'DynRelease' if self.options.shared else 'StaticRelease'
-        with tools.chdir(os.path.join('sources', 'builds', 'msvc', folder)):
-            command = tools.msvc_build_command(self.settings, 'libzmq.sln', upgrade_project=False,
-                                               build_type=config, targets=['libzmq'], toolset=toolset)
-            if self.settings.arch == 'x86':
-                command = command.replace('/p:Platform="x86"', '/p:Platform="Win32"')
-            self.run(command)
-
-    def build_configure(self):
-        with tools.chdir("sources"):
-            for name in ['autogen.sh', 'configure', 'version.sh', os.path.join('config', 'install-sh')]:
-                os.chmod(name, os.stat(name).st_mode | 0o111)
-
-            self.run('./autogen.sh')
-
-            env_build = AutoToolsBuildEnvironment(self)
-            args = ['--prefix=%s' % self.package_folder,
-                    '--with-pic',
-                    '--without-docs']
-            if self.options.shared:
-                args.extend(['--disable-static', '--enable-shared'])
-            else:
-                args.extend(['--enable-static', '--disable-shared'])
-            if self.settings.build_type == 'Debug':
-                args.append('--enable-debug')
-            env_build.configure(args=args)
-            env_build.make()
-            env_build.make(args=['install'])
+            self.build_cmake()
 
     def package(self):
-        with tools.chdir("sources"):
-            self.copy(pattern="LICENSE")
-        if self.settings.compiler == 'Visual Studio':
-            kind = 'dynamic' if self.options.shared else 'static'
-            if self.settings.arch == 'x86':
-                arch = 'Win32'
-            elif self.settings.arch == 'x86_64':
-                arch = 'x64'
-            vs_version = {8: 'v80',
-                          9: 'v90',
-                          10: 'v100',
-                          11: 'v110',
-                          12: 'v120',
-                          14: 'v140',
-                          15: 'v141'}.get(int(str(self.settings.compiler.version)))
-            libdir = os.path.join('sources', 'bin', arch, str(self.settings.build_type), vs_version, kind)
-            self.copy(pattern='*.lib', src=libdir, dst='lib', keep_path=False)
-            self.copy(pattern='*.dll', src=libdir, dst='bin', keep_path=False)
-            self.copy(pattern='*.h', src=os.path.join('sources', 'include'), dst='include', keep_path=True)
+        self.copy('FindZeroMQ.cmake')  # for cppzmq
+        self.copy('Findlibzmq.cmake')  # for czmq
+        self.copy(pattern="COPYING", src='sources', dst='license')
 
     def package_info(self):
         if self.settings.compiler == 'Visual Studio':
-            self.cpp_info.libs = ['libzmq', 'ws2_32', 'Iphlpapi']
-            if not self.options.shared:
-                self.cpp_info.defines.append('ZMQ_STATIC')
+            version = '_'.join(self.version.split('.'))
+            if self.settings.build_type == 'Debug':
+                runtime = '-gd' if self.options.shared else '-sgd'
+            else:
+                runtime = '' if self.options.shared else '-s'
+            library_name = 'libzmq-mt%s-%s.lib' % (runtime, version)
+            self.cpp_info.libs = [library_name, 'ws2_32', 'Iphlpapi']
         else:
             self.cpp_info.libs = ['zmq']
         if self.settings.os == "Linux":
-            self.cpp_info.libs.append('pthread')
+            self.cpp_info.libs.extend(['pthread', 'rt', 'm'])
+        if not self.options.shared:
+            self.cpp_info.defines.append('ZMQ_STATIC')
+        # contains ZeroMQConfig.cmake
+        self.cpp_info.builddirs.append(os.path.join(self.package_folder, 'share', 'cmake', 'ZeroMQ'))
