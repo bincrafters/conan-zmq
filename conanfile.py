@@ -3,6 +3,7 @@
 
 from conans import ConanFile, tools, CMake
 import os
+import fnmatch
 
 
 class ZMQConan(ConanFile):
@@ -80,6 +81,15 @@ class ZMQConan(ConanFile):
         self.copy('FindZeroMQ.cmake')  # for cppzmq
         self.copy('Findlibzmq.cmake')  # for czmq
         self.copy(pattern="COPYING", src='sources', dst='license')
+        if self.options.shared:
+            exts = ['*.a']
+        else:
+            exts = ['*.dll', '*.so*', '*.dylib*']
+        for root, _, filenames in os.walk(self.package_folder):
+            for ext in exts:
+                for filename in fnmatch.filter(filenames, ext):
+                    os.unlink(os.path.join(root, filename))
+
 
     def package_info(self):
         if self.settings.compiler == 'Visual Studio':
