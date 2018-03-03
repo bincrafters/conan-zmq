@@ -20,6 +20,14 @@ if (DEFINED CONAN_LIBSODIUM_ROOT)
     set(ZeroMQ_LIBRARIES "${ZeroMQ_LIBRARIES};${SODIUM_LIBRARY}")
 endif()
 
+if(DEFINED CONAN_LIBCXX)
+    if(CONAN_LIBCXX STREQUAL "libstdc++" OR CONAN_LIBCXX STREQUAL "libstdc++11")
+      set(ZeroMQ_LIBRARIES "${ZeroMQ_LIBRARIES};stdc++")
+    elseif(CONAN_LIBCXX STREQUAL "libc++")
+      set(ZeroMQ_LIBRARIES "${ZeroMQ_LIBRARIES};c++")
+    endif()
+endif()
+
 mark_as_advanced(ZeroMQ_LIBRARY ZeroMQ_INCLUDE_DIR)
 
 set(ZeroMQ_MAJOR_VERSION "4")

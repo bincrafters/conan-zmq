@@ -105,6 +105,12 @@ class ZMQConan(ConanFile):
         if self.settings.os == "Linux":
             self.cpp_info.libs.extend(['pthread', 'rt', 'm'])
         if not self.options.shared:
+            # zmq has C API, but requires C++ libraries to be lined
+            if str(self.settings.compiler) in ['clang', 'gcc', 'apple-clang']:
+                if str(self.settings.compiler.libcxx) in ['libstdc++', 'libstdc++11']:
+                    self.cpp_info.libs.append('stdc++')
+                elif str(self.settings.compiler.libcxx) == 'libc++':
+                    self.cpp_info.libs.append('c++')
             self.cpp_info.defines.append('ZMQ_STATIC')
         # contains ZeroMQConfig.cmake
         self.cpp_info.builddirs.append(os.path.join(self.package_folder, 'share', 'cmake', 'ZeroMQ'))
