@@ -90,7 +90,6 @@ class ZMQConan(ConanFile):
                 for filename in fnmatch.filter(filenames, ext):
                     os.unlink(os.path.join(root, filename))
 
-
     def package_info(self):
         if self.settings.compiler == 'Visual Studio':
             version = '_'.join(self.version.split('.'))
