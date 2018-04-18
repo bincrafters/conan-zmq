@@ -25,6 +25,7 @@ class ZMQConan(ConanFile):
             cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
         cmake.definitions['ENABLE_CURVE'] = self.options.encryption is not None
         cmake.definitions['WITH_LIBSODIUM'] = self.options.encryption == "libsodium"
+        cmake.definitions['CMAKE_INSTALL_LIBDIR'] = 'lib'
         cmake.configure(build_dir='build')
         cmake.build()
         cmake.install()
