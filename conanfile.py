@@ -20,7 +20,7 @@ class ZMQConan(ConanFile):
     generators = ['cmake']
 
     def build_cmake(self):
-        cmake = CMake(self, generator='Ninja')
+        cmake = CMake(self)
         if self.settings.compiler != 'Visual Studio':
             cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
         cmake.definitions['ENABLE_CURVE'] = self.options.encryption is not None
