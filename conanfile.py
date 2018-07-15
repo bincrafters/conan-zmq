@@ -20,11 +20,12 @@ class ZMQConan(ConanFile):
     generators = ['cmake']
 
     def build_cmake(self):
-        cmake = CMake(self, generator='Ninja')
+        cmake = CMake(self)
         if self.settings.compiler != 'Visual Studio':
             cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
         cmake.definitions['ENABLE_CURVE'] = self.options.encryption is not None
         cmake.definitions['WITH_LIBSODIUM'] = self.options.encryption == "libsodium"
+        cmake.definitions['CMAKE_INSTALL_LIBDIR'] = 'lib'
         cmake.configure(build_dir='build')
         cmake.build()
         cmake.install()
@@ -89,7 +90,6 @@ class ZMQConan(ConanFile):
             for ext in exts:
                 for filename in fnmatch.filter(filenames, ext):
                     os.unlink(os.path.join(root, filename))
-
 
     def package_info(self):
         if self.settings.compiler == 'Visual Studio':
