@@ -8,7 +8,7 @@ import fnmatch
 
 class ZMQConan(ConanFile):
     name = "zmq"
-    version = "4.2.2"
+    version = "4.2.5"
     url = "https://github.com/bincrafters/conan-zmq"
     description = "ZeroMQ is a community of projects focused on decentralized messaging and computing"
     license = "LGPL-3.0"
@@ -59,9 +59,6 @@ class ZMQConan(ConanFile):
         tools.replace_in_file(os.path.join(self._source_subfolder, 'CMakeLists.txt'),
                               'install (FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/libzmq',
                               'install (FILES ${CMAKE_BINARY_DIR}/bin/libzmq')
-
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'builds', 'cmake', 'platform.hpp.in'),
-                              'HAVE_LIBSODIUM', 'ZMQ_USE_LIBSODIUM')
 
     def build(self):
         if self.settings.compiler == 'Visual Studio':  # remove after conan 1.9.0
