@@ -27,13 +27,12 @@ class ZMQConan(ConanFile):
             cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
         cmake.definitions['ENABLE_CURVE'] = self.options.encryption is not None
         cmake.definitions['WITH_LIBSODIUM'] = self.options.encryption == "libsodium"
-        cmake.definitions['CMAKE_INSTALL_LIBDIR'] = 'lib'
         cmake.definitions['ZMQ_BUILD_TESTS'] = False
         cmake.definitions['WITH_PERF_TOOL'] = False
         cmake.configure(build_dir='build')
         return cmake
 
-    def configure(self):
+    def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
@@ -61,22 +60,12 @@ class ZMQConan(ConanFile):
                               'install (FILES ${CMAKE_BINARY_DIR}/bin/libzmq')
 
     def build(self):
-        if self.settings.compiler == 'Visual Studio':  # remove after conan 1.9.0
-            with tools.vcvars(self.settings, force=True, filter_known_paths=False):
-                cmake = self._configure_cmake()
-                cmake.build()
-        else:
-            cmake = self._configure_cmake()
-            cmake.build()
+        cmake = self._configure_cmake()
+        cmake.build()
 
     def package(self):
-        if self.settings.compiler == 'Visual Studio':  # remove after conan 1.9.0
-            with tools.vcvars(self.settings, force=True, filter_known_paths=False):
-                cmake = self._configure_cmake()
-                cmake.install()
-        else:
-            cmake = self._configure_cmake()
-            cmake.install()
+        cmake = self._configure_cmake()
+        cmake.install()
         self.copy('FindZeroMQ.cmake')  # for cppzmq
         self.copy('Findlibzmq.cmake')  # for czmq
         self.copy(pattern="COPYING", src=self._source_subfolder, dst='licenses')
