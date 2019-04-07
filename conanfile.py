@@ -1,17 +1,17 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-from conans import ConanFile, tools, CMake
 import os
-import fnmatch
+from conans import ConanFile, tools, CMake
 
 
 class ZMQConan(ConanFile):
     name = "zmq"
     version = "4.2.5"
     url = "https://github.com/bincrafters/conan-zmq"
+    homepage = "https://github.com/zeromq/libzmq"
     description = "ZeroMQ is a community of projects focused on decentralized messaging and computing"
     license = "LGPL-3.0"
+    author = "Bincrafters <bincrafters@gmail.com>"
+    topics = ("conan", "zmq", "libzmq", "message-queue", "asynchronous")
     exports = ["LICENSE.md"]
     exports_sources = ['FindZeroMQ.cmake', 'Findlibzmq.cmake', 'CMakeLists.txt']
     settings = "os", "arch", "compiler", "build_type"
@@ -21,62 +21,56 @@ class ZMQConan(ConanFile):
     _source_subfolder = "sources_subfolder"
     _build_subfolder = "build_subfolder"
 
-    def _configure_cmake(self):
-        cmake = CMake(self)
-        if self.settings.compiler != 'Visual Studio':
-            cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
-        cmake.definitions['ENABLE_CURVE'] = self.options.encryption is not None
-        cmake.definitions['WITH_LIBSODIUM'] = self.options.encryption == "libsodium"
-        cmake.definitions['ZMQ_BUILD_TESTS'] = False
-        cmake.definitions['WITH_PERF_TOOL'] = False
-        cmake.configure(build_dir='build')
-        return cmake
-
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
+
+    def build_requirements(self):
+        self.build_requires('ninja_installer/1.8.2@bincrafters/stable')
 
     def requirements(self):
         if self.options.encryption == 'libsodium':
             self.requires.add('libsodium/1.0.16@bincrafters/stable')
 
     def source(self):
-        # see https://github.com/zeromq/libzmq/issues/2597
+        sha256 = "f33807105ce47f684c26751ce4e27a708a83ce120cbabbc614c8df21252b238c"
+        tools.get("{}/archive/v{}.tar.gz".format(self.homepage, self.version), sha256=sha256)
         extracted_dir = "libzmq-%s" % self.version
-        archive_name = "v%s.tar.gz" % self.version
-        source_url = "https://github.com/zeromq/libzmq/archive/%s" % archive_name
-        tools.get(source_url)
         os.rename(extracted_dir, self._source_subfolder)
 
+    def _patch(self):
         # disable precompiled headers
         # fatal error C1083: Cannot open precompiled header file: 'precompiled.pch': Permission denied
         tools.replace_in_file(os.path.join(self._source_subfolder, 'CMakeLists.txt'),
                               "if (MSVC)\n    # default for all sources is to use precompiled header",
                               "if (MSVC_DISABLED)\n    # default for all sources is to use precompiled header")
-
         # fix PDB location
         tools.replace_in_file(os.path.join(self._source_subfolder, 'CMakeLists.txt'),
                               'install (FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/libzmq',
                               'install (FILES ${CMAKE_BINARY_DIR}/bin/libzmq')
 
+    def _configure_cmake(self):
+        cmake = CMake(self)
+        cmake.definitions['ENABLE_CURVE'] = self.options.encryption is not None
+        cmake.definitions['WITH_LIBSODIUM'] = self.options.encryption == "libsodium"
+        cmake.definitions['ZMQ_BUILD_TESTS'] = False
+        cmake.definitions['WITH_PERF_TOOL'] = False
+        cmake.definitions['BUILD_SHARED'] = self.options.shared
+        cmake.definitions['BUILD_STATIC'] = not self.options.shared
+        cmake.configure(build_dir=self._build_subfolder)
+        return cmake
+
     def build(self):
+        self._patch()
         cmake = self._configure_cmake()
         cmake.build()
 
     def package(self):
-        cmake = self._configure_cmake()
-        cmake.install()
         self.copy('FindZeroMQ.cmake')  # for cppzmq
         self.copy('Findlibzmq.cmake')  # for czmq
         self.copy(pattern="COPYING", src=self._source_subfolder, dst='licenses')
-        if self.options.shared:
-            exts = ['*.a']
-        else:
-            exts = ['*.dll', '*.so*', '*.dylib*']
-        for root, _, filenames in os.walk(self.package_folder):
-            for ext in exts:
-                for filename in fnmatch.filter(filenames, ext):
-                    os.unlink(os.path.join(root, filename))
+        cmake = self._configure_cmake()
+        cmake.install()
 
     def package_info(self):
         if self.settings.compiler == 'Visual Studio':
