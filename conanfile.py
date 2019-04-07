@@ -26,8 +26,7 @@ class ZMQConan(ConanFile):
             del self.options.fPIC
 
     def build_requirements(self):
-        if not tools.which("ninja"):
-            self.build_requires('ninja_installer/1.8.2@bincrafters/stable')
+        self.build_requires('ninja_installer/1.8.2@bincrafters/stable')
 
     def requirements(self):
         if self.options.encryption == 'libsodium':
