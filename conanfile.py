@@ -37,6 +37,10 @@ class ZMQConan(ConanFile):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
+    def build_requirements(self):
+        if self.settings.compiler == "Visual Studio" and not tools.which("ninja"):
+            self.build_requires.add('ninja_installer/1.8.2@bincrafters/stable')
+
     def requirements(self):
         if self.options.encryption == 'libsodium':
             self.requires.add('libsodium/1.0.16@bincrafters/stable')
