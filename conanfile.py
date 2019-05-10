@@ -5,7 +5,7 @@ from conans import ConanFile, tools, CMake
 
 class ZMQConan(ConanFile):
     name = "zmq"
-    version = "4.2.5"
+    version = "4.3.1"
     url = "https://github.com/bincrafters/conan-zmq"
     homepage = "https://github.com/zeromq/libzmq"
     description = "ZeroMQ is a community of projects focused on decentralized messaging and computing"
@@ -33,7 +33,7 @@ class ZMQConan(ConanFile):
             self.requires.add('libsodium/1.0.16@bincrafters/stable')
 
     def source(self):
-        sha256 = "f33807105ce47f684c26751ce4e27a708a83ce120cbabbc614c8df21252b238c"
+        sha256 = "bcbabe1e2c7d0eec4ed612e10b94b112dd5f06fcefa994a0c79a45d835cd21eb"
         tools.get("{}/archive/v{}.tar.gz".format(self.homepage, self.version), sha256=sha256)
         extracted_dir = "libzmq-%s" % self.version
         os.rename(extracted_dir, self._source_subfolder)
