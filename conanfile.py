@@ -38,17 +38,6 @@ class ZMQConan(ConanFile):
         extracted_dir = "libzmq-%s" % self.version
         os.rename(extracted_dir, self._source_subfolder)
 
-    def _patch(self):
-        # disable precompiled headers
-        # fatal error C1083: Cannot open precompiled header file: 'precompiled.pch': Permission denied
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'CMakeLists.txt'),
-                              "if (MSVC)\n    # default for all sources is to use precompiled header",
-                              "if (MSVC_DISABLED)\n    # default for all sources is to use precompiled header")
-        # fix PDB location
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'CMakeLists.txt'),
-                              'install (FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/libzmq',
-                              'install (FILES ${CMAKE_BINARY_DIR}/bin/libzmq')
-
     def _configure_cmake(self):
         cmake = CMake(self)
         cmake.definitions['ENABLE_CURVE'] = self.options.encryption is not None
@@ -61,7 +50,6 @@ class ZMQConan(ConanFile):
         return cmake
 
     def build(self):
-        self._patch()
         cmake = self._configure_cmake()
         cmake.build()
 
