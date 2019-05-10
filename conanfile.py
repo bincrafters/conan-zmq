@@ -33,7 +33,7 @@ class ZMQConan(ConanFile):
             self.requires.add('libsodium/1.0.16@bincrafters/stable')
 
     def source(self):
-        sha256 = "bcbabe1e2c7d0eec4ed612e10b94b112dd5f06fcefa994a0c79a45d835cd21eb"
+        sha256 = "e1dec061725b55d791e0c6952b8c220846c8cd901c09d1283a6e902898205b9d"
         tools.get("{}/archive/v{}.tar.gz".format(self.homepage, self.version), sha256=sha256)
         extracted_dir = "libzmq-%s" % self.version
         os.rename(extracted_dir, self._source_subfolder)
