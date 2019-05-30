@@ -69,7 +69,8 @@ class ZMQConan(ConanFile):
                 # unfortunately Visual Studio and Ninja generators produce different file names
                 toolset = {'12': 'v120',
                            '14': 'v140',
-                           '15': 'v141'}.get(str(self.settings.compiler.version))
+                           '15': 'v141',
+                           '16': 'v142'}.get(str(self.settings.compiler.version))
                 library_name = 'libzmq-%s-mt%s-%s.lib' % (toolset, runtime, version)
             self.cpp_info.libs = [library_name, 'ws2_32', 'Iphlpapi']
         else:
