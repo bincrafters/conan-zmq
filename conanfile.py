@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 import os
 from conans import ConanFile, tools, CMake
 
 
 class ZMQConan(ConanFile):
     name = "zmq"
-    version = "4.2.5"
+    version = "4.3.2"
     url = "https://github.com/bincrafters/conan-zmq"
     homepage = "https://github.com/zeromq/libzmq"
     description = "ZeroMQ is a community of projects focused on decentralized messaging and computing"
@@ -25,29 +24,15 @@ class ZMQConan(ConanFile):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
-    def build_requirements(self):
-        self.build_requires('ninja_installer/1.8.2@bincrafters/stable')
-
     def requirements(self):
         if self.options.encryption == 'libsodium':
             self.requires.add('libsodium/1.0.16@bincrafters/stable')
 
     def source(self):
-        sha256 = "f33807105ce47f684c26751ce4e27a708a83ce120cbabbc614c8df21252b238c"
+        sha256 = "02ecc88466ae38cf2c8d79f09cfd2675ba299a439680b64ade733e26a349edeb"
         tools.get("{}/archive/v{}.tar.gz".format(self.homepage, self.version), sha256=sha256)
         extracted_dir = "libzmq-%s" % self.version
         os.rename(extracted_dir, self._source_subfolder)
-
-    def _patch(self):
-        # disable precompiled headers
-        # fatal error C1083: Cannot open precompiled header file: 'precompiled.pch': Permission denied
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'CMakeLists.txt'),
-                              "if (MSVC)\n    # default for all sources is to use precompiled header",
-                              "if (MSVC_DISABLED)\n    # default for all sources is to use precompiled header")
-        # fix PDB location
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'CMakeLists.txt'),
-                              'install (FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/libzmq',
-                              'install (FILES ${CMAKE_BINARY_DIR}/bin/libzmq')
 
     def _configure_cmake(self):
         cmake = CMake(self)
@@ -61,7 +46,6 @@ class ZMQConan(ConanFile):
         return cmake
 
     def build(self):
-        self._patch()
         cmake = self._configure_cmake()
         cmake.build()
 
@@ -85,7 +69,8 @@ class ZMQConan(ConanFile):
                 # unfortunately Visual Studio and Ninja generators produce different file names
                 toolset = {'12': 'v120',
                            '14': 'v140',
-                           '15': 'v141'}.get(str(self.settings.compiler.version))
+                           '15': 'v141',
+                           '16': 'v142'}.get(str(self.settings.compiler.version))
                 library_name = 'libzmq-%s-mt%s-%s.lib' % (toolset, runtime, version)
             self.cpp_info.libs = [library_name, 'ws2_32', 'Iphlpapi']
         else:
