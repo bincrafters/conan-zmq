@@ -53,7 +53,6 @@ class ZMQConan(ConanFile):
         self.copy('FindZeroMQ.cmake')  # for cppzmq
         self.copy('Findlibzmq.cmake')  # for czmq
         self.copy(pattern="COPYING", src=self._source_subfolder, dst='licenses')
-        self.copy(pattern="COPYING.LESSER", src=self._source_subfolder, dst='licenses')
         cmake = self._configure_cmake()
         cmake.install()
 
