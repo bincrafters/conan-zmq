@@ -26,7 +26,7 @@ class ZMQConan(ConanFile):
 
     def requirements(self):
         if self.options.encryption == 'libsodium':
-            self.requires.add('libsodium/1.0.16@bincrafters/stable')
+            self.requires.add('libsodium/1.0.18@bincrafters/stable')
 
     def source(self):
         sha256 = "02ecc88466ae38cf2c8d79f09cfd2675ba299a439680b64ade733e26a349edeb"
