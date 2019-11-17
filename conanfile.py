@@ -9,7 +9,6 @@ class ZMQConan(ConanFile):
     homepage = "https://github.com/zeromq/libzmq"
     description = "ZeroMQ is a community of projects focused on decentralized messaging and computing"
     license = "LGPL-3.0"
-    author = "Bincrafters <bincrafters@gmail.com>"
     topics = ("conan", "zmq", "libzmq", "message-queue", "asynchronous")
     exports = ["LICENSE.md"]
     exports_sources = ['FindZeroMQ.cmake', 'Findlibzmq.cmake', 'CMakeLists.txt']
